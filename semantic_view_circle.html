@@ -1,0 +1,1169 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Wine Investigator SVG</title>
+<link rel="stylesheet" href="css/thumbnailviewer.css" type="text/css" />
+<link rel="stylesheet" href="css/semanticfishviewer.css" type="text/css" />
+<link href="css/jquery-ui.css" rel="stylesheet" type="text/css" />
+<script type="text/javascript" src="javascripts/d3.v2.js"></script>
+<script type="text/javascript" src="javascripts/jquery.js"></script>
+<script type="text/javascript" src="javascripts/CustomTooltip.js"></script>
+<script type="text/javascript" src="javascripts/clustering.js"></script>
+<script type="text/javascript" src="javascripts/thumbnailviewer.js"></script>
+<script type="text/javascript" src="javascripts/jquery-ui.min.js"></script>
+<script type="text/javascript" src="javascripts/utility.js"></script>
+
+</head>
+<body>
+	<div id="top-tools">
+		<!-- search tool-->
+		<script>
+	$.widget( "custom.catcomplete", $.ui.autocomplete, {
+		_renderMenu: function( ul, items ) {
+			var self = this,
+				currentCategory = "";
+			
+			//order items according to their categories
+			items.sort(function(a,b){
+				attr_a = a.category;
+				attr_b = b.category;
+				
+				if(attr_a < attr_b) return -1;
+				else if(attr_a > attr_b) return 1;
+				return 0;				
+			});
+			////
+				
+				
+			$.each( items, function( index, item ) {
+				
+				if ( item.category != currentCategory ) {
+					ul.append( "<li class='ui-autocomplete-category'>" + item.category + "</li>" );
+					currentCategory = item.category;
+				}
+				self._renderItem( ul, item );
+			});
+		}
+	});
+	
+	$(function() {
+		var accentMap = {
+			"á":"a",
+			"â":"a",
+			"à":"a",		
+			"ä":"a",
+			
+			"ö":"o",
+			"ô":"o",			
+			"î":"i",
+			"ï":"i",			
+
+			"é":"e",
+			"ë":"e",
+			"è":"e",
+			"ê":"e",
+			
+			"œ":"ce",
+			"ù":"u",			
+			"û":"u",
+			"ü":"u",			
+			"ÿ":"y",
+						
+			"ç":"c"			
+		};
+		
+		var normalize = function( term ) {
+			var ret = "";
+			for ( var i = 0; i < term.length; i++ ) {
+				ret += accentMap[ term.charAt(i) ] || term.charAt(i);
+			}
+			return ret;
+		};
+
+		$.ajax({
+			url: "data/items_200.xml",
+			dataType: "xml",
+			success: function( xmlResponse ) {
+				var data = $( "item", xmlResponse ).map(function() {
+					var country = "";
+					$(this).find("attribute").each(function(){
+						if($(this).find("attName").text() == "country"){ country = $(this).find("attValue").text();}
+					});
+					if(country != "")country = ", " + country;
+					
+					
+					return {
+						value: $( "name", this ).text() + country,
+						id: $( "id", this ).text(),
+						category:$( "genre", this ).text() ||""
+					};
+				}).get();
+				$( "#searchtext" ).catcomplete({
+					delay:0,
+					//source: data,
+					minLength: 2,
+					select: function( event, ui ) {
+						var node = semanticview.findNode(ui.item.id);
+						console.log("Selected:" + node.name+ "(" + node.id + ")");						
+						semanticview.resetRoot(node);
+						$( "#searchtext" ).blur();
+						//console.log( ui.item ?
+						//	"Selected: " + ui.item.value + ", Id: " + ui.item.id :"Nothing selected, input was " + this.value );
+					},
+					source: function( request, response ) {
+						var matcher = new RegExp( $.ui.autocomplete.escapeRegex( request.term ), "i" );
+						response( $.grep( data, function( item ) {
+						value = item.value;
+						category = item.category;
+						return matcher.test(value) || matcher.test(normalize( value )) || matcher.test(category) || matcher.test(normalize(category));;
+						}));
+					}
+				});
+			}
+		});
+	});
+	</script>
+		<div align="right">
+			<div class="ui-widget">
+
+				<input id="searchtext" style="width: 300px;" /> 
+                <!--<img
+					src="images/search.png" width="23" height="23"
+					style="vertical-align: bottom">--> <!-- <input id="searchbtn" type="button" value="Search" />-->
+			</div>
+		</div>
+	</div>
+	<!-- end of search tool-->
+
+	<!-- community tool-->
+	<script>
+	$(function() {
+		$( "#slider-range-min" ).slider({
+			range: "min",
+			value: 5,
+			min: 0,
+			max: 30,
+			slide: function( event, ui ) {
+				$( "#amount" ).text( ui.value );
+				//add actions
+				semanticview.redetermineGroup(ui.value);
+				semanticview.redraw(1);				
+				//
+			}
+		});
+		
+		$( "#amount" ).text( $( "#slider-range-min" ).slider( "value" ) );
+	});
+</script>
+	<div class="community-control" style="margin: 5px 0px;">
+		<table cellpadding="0" cellspacing="0">
+			<tr>
+				<!--<td style=" vertical-align:top;"><input id="communityEnableBtn" type="button" value="Enable" style="width:100px"></td>-->
+				<td><label
+					style="border: 0; color: #f6931f; font-weight: bold; font-size: 13px;">Community:
+				</label></td>
+				<td><div id="slider-range-min"
+						style="width: 500px; height: 8px; margin: 0px 10px;"></div></td>
+				<td>
+					<!--<label style="color:#f6931f; font-weight:bold; font-size:13px; border:0;">Threshold:</label>-->
+					<label id="amount"
+					style="border: 0; color: #f6931f; font-weight: bold; font-size: 13px;"></label>
+				</td>
+			</tr>
+		</table>
+	</div>
+	<!-- End community-control -->
+
+	</div>
+	<!-- End top-tools-->
+	<div id="viewer"></div>
+	<!--
+<span>
+<input type="button" value="Category" style="width:100px">
+<input type="button" value="Country" style="width:100px">
+<input type="button" value="Year" style="width:100px">
+</span>
+-->
+	<script type="text/javascript">
+registerKeyboardHandler = function(callback){
+	var callback = callback;
+	d3.select(window).on("keydown",callback);
+};
+
+
+SemanticView = function(elemid, options){
+var self = this;
+
+var margin = {top:10, right:10, bottom:10, left:10},
+	padding = {top:10, right:10, bottom:10, left:10},
+	width = $("#" + elemid).width(),     
+    height = $(window).height() - $("#top-tools").height() - margin.bottom;  
+	
+	this.width = width;
+	this.height = height;  
+	
+	
+var off = 20,    // cluster hull offset
+    expand = {}, // expanded clusters
+    data, net={}, hull,  link, node,root;
+	
+var categories=[];
+var node_width = 30;
+var node_height = 57;
+var node_radius = 10;
+
+var img,text;
+	
+this.xScale = d3.scale.linear().range([0, width]);
+this.yScale = d3.scale.linear().range([0, height]);
+
+
+//drag x-axis logic
+this.downx = Math.NaN;
+//drag y-axis logic
+this.downy = Math.NaN;
+
+this.dragged = this.selected = null;
+
+
+// -------------------------------------------------------
+
+var tooltip = CustomTooltip("tooltip", 270);
+
+
+
+vis = d3.select("#viewer").append("svg:svg")
+   .attr("width", width )
+   .attr("height", height )
+   .attr("pointer-events","all")
+  .append("svg:g")
+   .call(d3.behavior.zoom().on("zoom", scale_translate))
+   .on("dblclick.zoom", null)
+  .append("svg:g");
+   
+var plot = vis.append("rect")
+			  .attr("width", 7*width)
+			  .attr("height", 7*height)
+			  .attr("x", -3*width)
+			  .attr("y", -3*height)
+			  .attr("opacity",0)
+			  .on("mousedown.drag",mousedown)
+			  .on("mouseup.drag", mouseup)
+			  .on("touchstart.drag",mousedown)
+			  .on("touchend.drag", mouseup);
+			  
+			  //.log($("svg"));
+/*
+$("svg")//.append("defs")
+    .append("defs:radialGradient")
+	.attr("id","gradient")
+	.attr("cx","50%")
+	.attr("cy","50%")
+	.attr("r","50%")
+	.attr("fx","50%")
+	.attr("fy","50%")
+	.append("stop")
+	.attr("offset","0%")
+	.style("stop-color","rgb(0,0,255)")
+	.style("stop-opacity","1")
+	.append("stop")
+	.attr("offset","100%")
+	.style("stop-color","rgb(200,200,200)")
+	.style("stop-opacity","1");
+*/
+
+		
+
+
+
+
+			  
+
+
+//d3.select('#viewer')
+  // .on("mousedown.drag",mousedown)
+ // .on("touchstart.drag", mousedown)
+ // .on("mousemove.drag", mousemove)
+ // .on("touchmove.drag", mousemove)
+ // .on("mouseup.drag", mouseup)
+ // .on("touchend.drag", mouseup);
+ ;
+  
+var sceen_translation = {x:0, y:0};
+var sceen_scale = 0;
+
+var center ={x:width/2, y:height/2};
+var center_pre = {x:0,y:0};
+
+var draw_hull = false;
+var first_draw_hull = true;
+
+this.setDrawHull = function(flag){
+	if(draw_hull == false && flag == true) first_draw_hull = true;
+	draw_hull = flag;
+	
+}
+
+this.getDrawHull = function(){
+	return draw_hull;
+}
+
+function scale_translate(){	
+	vis.attr("transform", "translate(" + d3.event.translate + ")" + " scale(" + d3.event.scale + ")");
+	
+	center.x = (width/2 - d3.event.translate[0])/d3.event.scale ;
+	center.y = (height/2 - d3.event.translate[1])/d3.event.scale;
+		
+	//console.log('d3.event:'+d3.event.translate[0]+':'+d3.event.translate[1]);
+		
+	sceen_translation.x = d3.event.translate[0];
+	sceen_translation.y = d3.event.translate[1];
+	sceen_scale = d3.event.scale;	
+	
+	var depth = net.depth;
+	text = textg.selectAll("text");
+	text.text(function(d){d.r = Math.max(Math.ceil(node_radius * Math.pow(2, 1- d.depth/depth)),2); if((sceen_scale > 0 && sceen_scale * d.r > 15) || (sceen_scale == 0 && d.r > 15))return html_entity_decode(d.name); else return "";}); 
+}
+
+
+vis.attr("opacity", 1e-6)
+   .transition()
+   .duration(1000)
+   .attr("opacity", 1);
+   
+var hullg = vis.append("g");
+    linkg = vis.append("g"),
+  	nodeg = vis.append("g"),
+  	imgg = vis.append("g"),
+  	textg = vis.append("g");
+   
+var force = d3.layout.force()
+      .size([width, height]);
+     
+	  
+	  
+	  
+function convexHulls(nodes, index, offset) {
+  var hulls = {};
+  var sizes = [];
+
+  // create point sets
+  for (var k=0; k<nodes.length; ++k) {
+    var n = nodes[k];
+    if (n.size) continue;
+    var i = index(n),
+        l = hulls[i] || (hulls[i] = []);
+    l.push([n.x-offset, n.y-offset]);
+    l.push([n.x-offset, n.y+offset]);
+    l.push([n.x+offset, n.y-offset]);
+    l.push([n.x+offset, n.y+offset]);
+	
+	var s = sizes[i] || (sizes[i] = 0);
+	s++;
+	sizes[i] = s;
+	
+  }
+
+  // create convex hulls
+  var hullsv = [];
+    
+
+  for (i in hulls) {
+	  if(sizes[i] == 1) continue;
+    hullsv.push({group: i, path: d3.geom.hull(hulls[i])});
+  }
+
+
+  return hullsv;
+}
+
+function drawCluster(d) {
+  return curve(d.path); // 0.8
+}
+	  
+var rootIndex = 8;
+var cluster_tree;
+
+var nodes_table = {};
+var node_groups = {};
+var groupIds = [];
+
+
+var group_depth = 21;//20
+this.group_depth = group_depth
+this.graph_depth = 0;
+
+
+function getGroupId(n){
+	return n.groupId;
+}
+
+function getNodeIndex(id){
+	return nodes_table[id];
+}
+
+function assignGroup(nodes, tree, groupId){
+	if(tree.size > 1){
+		if(tree.left != null)assignGroup(nodes, tree.left, groupId);
+		if(tree.right != null) assignGroup(nodes, tree.right, groupId);		
+	}else{		
+		nodes[getNodeIndex(tree.label)].groupId = groupId;
+	}
+	
+}
+
+function determineGroup(nodes, tree, group_depth){
+	
+	if(tree.depth > group_depth){
+		determineGroup(nodes, tree.left, group_depth);
+		determineGroup(nodes, tree.right, group_depth);
+	}else if(tree.depth == group_depth){
+		if((tree.left != null && tree.left.depth == group_depth) || (tree.right != null && tree.right.depth == group_depth)) {
+			determineGroup(nodes, tree.left, group_depth);
+			determineGroup(nodes, tree.right, group_depth);
+		}else{
+			assignGroup(nodes, tree, groupIds.length);
+			groupIds.push(groupIds.length);
+		}
+	}else{
+		assignGroup(nodes, tree, groupIds.length);
+		groupIds.push(groupIds.length);
+	}
+}
+
+
+function init(){
+	
+  d3.json("data/items_200.json", function(json) {
+	data = json;
+	
+	var labels = [];
+	var vectors = [];
+	var weights = [1,1,1,1,1];
+	
+	for(var k = 0; k < data.nodes.length; k++){
+		var n = data.nodes[k];
+	  nodes_table[n.id] = k;
+	  var cIndex = jQuery.inArray(n.genre, categories);		
+	  if(cIndex < 0) {
+		  categories.push(n.genre);
+	  }	
+	  labels.push(n.id);
+	  //var vector = [n.genre,n.country,n.region,n.greapeTypes,n.year];
+	  //vectors.push(vector);				
+	} 
+	
+	var links = [];
+	
+	for(var k = 0; k < data.links.length; k++){
+		  var e = data.links[k];
+		  if(e.value > 3) {links.push(e);}
+	}
+	data.links = links;
+	
+	
+   ////
+	/*var cluster_tree = clustering.agglomerateWithWeight(labels,
+										 vectors,
+										 weights,
+										 clustering.EUCLIDIAN_DISTANCE,
+										 clustering.SINGLE_LINKAGE
+										 );
+										 
+	  */								   
+	cluster_tree = clustering.agglomerateWithDistance(labels,
+										 data.links,
+										 clustering.SINGLE_LINKAGE
+										 );
+
+	//console.log(cluster_tree);
+	assignGraphDepth(cluster_tree.depth);
+	$( "#slider-range-min" ).slider( "option", "max", self.graph_depth);
+	$( "#slider-range-min" ).slider( "option", "value", group_depth);
+		
+	$( "#amount" ).text( $( "#slider-range-min" ).slider( "value" ) );
+	
+	groupIds = [];
+	determineGroup(data.nodes, cluster_tree, group_depth);
+	  
+	console.log(groupIds);
+	  
+	  
+  
+	for (var i=0; i<data.links.length; ++i) {
+	  var o = data.links[i];
+	  o.source = data.nodes[o.source];
+	  o.target = data.nodes[o.target];
+	}
+  
+	root = data.nodes[rootIndex];
+	root.x = width/2;
+	root.y = height/2;
+	
+	redraw(0);
+	
+  });
+}
+
+this.init = init;
+
+function assignGraphDepth(depth){
+	
+	self.graph_depth = depth;
+	
+}
+
+this.getGraphDepth = function(){
+	return this.graph_depth;
+}
+
+
+function redetermineGroup(gdepth){
+	group_depth = gdepth;
+	groupIds = [];
+	determineGroup(net.nodes, cluster_tree, group_depth);
+};
+
+this.redetermineGroup = redetermineGroup;
+
+
+var curve = d3.svg.line()
+			//.interpolate("basis-closed");
+    .interpolate("cardinal-closed")
+    .tension(0.8);
+
+var fill = function(index){return colors[index];} //d3.scale.category20b();
+
+var colors = [ '#C0C0FF', '#C0FFFF','#C0FFC0','#FFFFC0', '#FF40FF', '#40C0FF', '#40FFFF','#C0FF40','#40FF00','#FFFF40','#C080FF','#80C0C0','#40FFC0','#80C000','#FFC0C0','#C000FF','#0080FF','#00C0C0','#80FF80','#00C000','#FFC040','#8000FF','#0040FF','#008080','#40FF80','#FF8080','#C080C0','#8080C0','#00FF40','#FF8000','#C000C0','#0080C0','#80C040','#FF4000','#8000C0','#0040C0','#00C080','#C0C080','#804080','#404080','#C0C000','#C08040','#C04040','#C00000','#808000','#804000'];
+
+//'#4080FF',,'#C0FF00''#FFC0FF',
+
+
+function nodeid(n) {
+  return n.size ? "_g_"+n.group : n.name;
+}
+
+function linkid(l) {
+  var u = l.source.id, v = l.target.id;
+  return u<v ? u+"|"+v : v+"|"+u;
+}
+
+function print_r(root){
+		var text = '';
+		for(var attr in root){
+		text += attr + ':' + root[attr] + ', ';
+		}
+		alert(text);	
+}
+
+// constructs the network to visualize
+function network(data, prev,root) {
+	var nodes = [], // output nodes
+        links = [],  // output links
+		t_links = [],
+		t_links_1 = [],
+		nodes_id = [];
+		
+	//	for(var j = 0; j < data.nodes.length;j++){console.log(j+":"+data.nodes[j].id);	}
+	
+		
+	var depth;
+
+	prev = prev || {};
+	if(prev.root)prev.root.fixed = false;
+	
+	root.fixed = true;	
+	root.depth = 0;	
+	
+	nodes.push(root);
+	nodes_id.push(root.id);
+	
+	for(var k = 0; k < data.links.length; k++){
+		var e = data.links[k];
+		if(e.value > 0) {t_links.push(e);t_links_1.push(e);}
+	}
+	
+	var full_node_id = [];
+	
+	for(var k = 0; k < data.nodes.length; k++){
+		var n = data.nodes[k];
+		full_node_id.push(n.id);		
+	}	
+	
+	var sIndex, tIndex, sId, tId;		
+	for(var d = 0; nodes.length != data.nodes.length; d++){
+		depth = d + 1;
+	
+
+		var tt_links = [], tt_nodes = []; tt_nodes_id = [];
+		for(var k = 0; k < t_links.length; k++){
+			var e = t_links[k];			
+			if(typeof e.source == 'object'){
+				sId = e.source.id;
+				tId = e.target.id;				
+			} 
+			else{
+				sId = data.nodes[e.source].id;
+				tId = data.nodes[e.target].id;				
+			}
+			
+			
+			sIndex = jQuery.inArray(sId, nodes_id);
+			tIndex = jQuery.inArray(tId, nodes_id);	
+			if(sIndex >= 0){				
+				if(tIndex < 0  && jQuery.inArray(tId, tt_nodes_id) < 0){							
+					tt_nodes.push(data.nodes[jQuery.inArray(tId, full_node_id)]);
+					tt_nodes_id.push(tId);			
+					tt_links.push(e);				
+				}
+				else{
+					//tt_links.push(e);
+				}
+								
+			}else if(tIndex >= 0  &&  jQuery.inArray(sId, tt_nodes_id) < 0){	
+				tt_nodes.push(data.nodes[jQuery.inArray(sId, full_node_id)]);
+				tt_nodes_id.push(sId);			
+				tt_links.push(e);				
+			}		
+		}
+	
+		if(tt_nodes.length == 0 ){			
+			for(var j = 0; j < data.nodes.length;j++){				
+				if(jQuery.inArray(data.nodes[j].id, nodes_id) < 0) {					
+					tt_nodes.push(data.nodes[j]);
+					tt_nodes_id.push(data.nodes[j].id);	
+					d++;			
+					break;
+				}
+			}
+		}
+		
+		
+		for(var i = 0; i < tt_nodes.length; i++){				
+			var node = 	tt_nodes[i];			
+			node.depth = d+1;
+			node.fixed = false;		
+			nodes_id.push(node.id);
+			nodes.push(node);		
+		}
+
+		
+		for(var i = 0; i < tt_links.length; i++){
+			var e = tt_links[i];	
+			t_links.splice(jQuery.inArray(e,t_links),1);
+			
+		}
+	}
+	nodes = data.nodes;
+	links = t_links_1;
+	
+
+	return {nodes: nodes, links: links, root: root,depth:depth};
+}
+
+function findNode(nodeId){
+
+	for(var i = 0; i < net.nodes.length; i++){
+		if(net.nodes[i].id == nodeId) {return net.nodes[i]};
+	}	
+	return null;
+}
+
+this.findNode = findNode;
+
+
+
+var translation = {'x':0, 'y':0};
+
+
+function redraw(not_center_focus) {
+	
+	force.stop();
+	
+	net = network(data,net,root);
+	
+	var depth = net.depth;
+	
+	force.nodes(net.nodes)
+         .links(net.links)
+		 .linkDistance(function(d) {return (10/d.value + 1.5) * (1/(1+Math.min(d.source.depth, d.target.depth) * 0.1)) *90; })   
+		 
+		 
+         .linkStrength( function(d) { return (1/(1+d.value)) } )
+		 
+		   
+	  	 .charge(function(d){return -700; //return -2000/(Math.log(1+d.depth) + 1);
+		 })
+	     .gravity(0.2)
+	     .start();
+	
+	
+	
+	link = linkg.selectAll("line.link").data(net.links, function(d){return linkid(d)});
+	link.enter().append("line")
+      .attr("class", "link")
+      .attr("x1", function(d) { return d.source.x; })
+      .attr("y1", function(d) { return d.source.y; })
+      .attr("x2", function(d) { return d.target.x; })
+      .attr("y2", function(d) { return d.target.y; })
+      .style("stroke-width", function(d) { return d.size || 1; });
+	link.exit().remove();
+
+ 
+  
+  node = nodeg.selectAll("circle.node").data(net.nodes, function(d){return d.id;});  
+  
+  node.enter()
+     .append("circle") 
+      .attr("class", function(d) { return "node"; }) 
+     .attr("r", function(d) { 
+	 	if(d.id == net.root.id)d.r = Math.max(Math.ceil(node_radius * Math.pow(2, 1.5)),2); 
+	    else d.r = Math.max(Math.ceil(node_radius * Math.pow(2, 1- d.depth/depth)),2); 
+		return d.r; })
+      .attr("cx", function(d) { d.x = Math.max(d.r, Math.min(width - d.r, d.x)) ;  return d.x; })
+      .attr("cy", function(d) { d.y = Math.max(d.r, Math.min(height - d.r, d.y)); return d.y; })
+	  .style("stroke-width", function(d){if(d.id == net.root.id) return 7;else return 1.5;})
+      .style("fill", function(d){return fill(d.groupId);})
+	  .style("stroke", function(d){if(d.id == net.root.id) return d3.rgb(fill(d.groupId)).darker();});
+	  
+	  
+
+	  
+	node.on("click", function(d) {
+		d3.event.preventDefault();
+		d3.event.stopPropagation();	
+		resetRoot(d);
+			
+      });	  
+
+	node
+	.on("mouseover", function(d,i){show_details(d,i,this)})
+	.on("mouseout", function(d,i){hide_details(d,i,this)});
+	
+
+  node.exit().transition().ease("exp-in-out").attr("r", 0).remove ();
+
+  node.call(force.drag);
+  
+  
+  text = textg.selectAll("text.node").data(net.nodes, function(d){return "title"+d.id});
+  text.enter().append("text")
+  	.attr("class","node")
+	  .attr("x", function(d){return d.x })
+      .attr("y", function(d) { return d.y})
+     .attr("dx", -3) // padding-right
+     .attr("dy", ".35em") // vertical-align: middle
+     .attr("text-anchor", "middle") // text-align: right
+     .text(function(d){d.r = Math.max(Math.ceil(node_radius * Math.pow(2, 1- d.depth/depth)),2); if((sceen_scale > 0 && sceen_scale * d.r > 15) || (sceen_scale == 0 && d.r > 15))return html_entity_decode(d.name); else return "";});
+  text.exit().remove ();
+  
+  text.on("click", function(d) {
+		d3.event.preventDefault();
+		d3.event.stopPropagation();	
+		resetRoot(d);
+			
+      });	  
+
+	text
+	.on("mouseover", function(d,i){show_details(d,i,this)})
+	.on("mouseout", function(d,i){hide_details(d,i,this)});
+  
+  
+  //if(translation.x != 0 || translation.y != 0){
+		var distance = Math.sqrt(translation.x*translation.x + translation.y*translation.y);
+		var trans_duration = distance *10;
+		
+		//console.log('center:' + center.x + ':' + center.y);
+		//console.log('translation:' + translation.x + ':' + translation.y);
+		
+		var tx, ty;
+		if(not_center_focus){tx = center_pre.x; ty = center_pre.y;}
+		else{tx = center.x; ty = center.y;}
+	
+	node
+	.transition().duration(trans_duration)	
+    .attr("transform", function(d) {return "translate(" + (-translation.x - width/2 + tx ) +  "," + (-translation.y - height/2 + ty) + ") "; })
+    .transition().duration(500)
+	// .attr("transform", function(d) {return "scale(" + 2 + ") "; })
+	.attr("r", function(d) {
+		if(d.id == net.root.id)d.r = Math.max(Math.ceil(node_radius * Math.pow(2, 1.5)),2); 
+		else d.r = Math.max(Math.ceil(node_radius * Math.pow(2, 1- d.depth/depth)),2); 
+		return d.r; })
+	.style("fill", function(d){return fill(d.groupId);})
+	.style("stroke-width", function(d){if(d.id == net.root.id) return 7;else return 1.5;})
+	.style("stroke", function(d){if(d.id == net.root.id) return d3.rgb(fill(d.groupId)).darker();}) ;
+	
+	/*node
+	.transition().duration(trans_duration)
+    .attr("transform", function(d) {return "translate(" + (-translation.x - width/2 + tx ) +  "," + (-translation.y - height/2 + ty) + ") "; })
+    .transition().duration(500)
+	.attr("width", function(d) { d.width = Math.max(Math.ceil(node_width * ( 1- 2*d.depth/depth)),8); return d.width + 2; })
+	.attr("height", function(d) { d.height = Math.max(Math.ceil(node_height* ( 1- 2*d.depth/depth)),8);return d.height + 2; })
+	.style("opacity", function(d){if(d.id == net.root.id) return 1;else return 0;});
+	;*/
+	
+	text.transition().duration(trans_duration)	
+	.attr("transform", function(d) { return "translate(" + (-translation.x - width/2 + tx) +  "," + (-translation.y - height/2 + ty) + ")"; })
+	.transition()
+	.text(function(d){d.r = Math.max(Math.ceil(node_radius * Math.pow(2, 1- d.depth/depth)),2); if((sceen_scale > 0 && sceen_scale * d.r > 15) || (sceen_scale == 0 && d.r > 15))return html_entity_decode(d.name); else return "";}); 
+	
+	
+	link.transition().duration(trans_duration)	
+	.attr("transform", function(d) { return "translate(" + (-translation.x - width/2 + tx) +  "," + (-translation.y - height/2 + ty) + ")"; }); 
+	
+	if(translation.x != 0 || translation.y != 0){
+	if(draw_hull){
+	
+		if (!hull || first_draw_hull) {
+			first_draw_hull = false;
+			
+			hullg.selectAll("path.hull").remove();
+		  hull = hullg.selectAll("path.hull")
+		.data(convexHulls(net.nodes, getGroupId, off))
+		.enter().append("path")
+		.attr("class", "hull")
+		.attr("d", drawCluster)
+		.style("fill", function(d) { return fill(d.group); });
+		
+		hull
+		.attr("transform", "translate(" + (-translation.x - width/2 + tx) +  "," + (-translation.y - height/2 + ty) + ")")
+		
+		}else{
+		
+	
+		hull.transition().duration(trans_duration)	
+		.attr("transform", "translate(" + (-translation.x - width/2 + tx) +  "," + (-translation.y - height/2 + ty) + ")"); 
+		}
+	}
+	else{
+		 hullg.selectAll("path.hull").remove();
+		}
+	}else{
+		if(draw_hull){
+		first_draw_hull = false;
+		  hullg.selectAll("path.hull").remove();
+		  hull = hullg.selectAll("path.hull")
+		.data(convexHulls(net.nodes, getGroupId, off))
+		.enter().append("path")
+		.attr("class", "hull")
+		.attr("d", drawCluster)
+		.style("fill", function(d) { return fill(d.group); });
+		}
+		else{
+		 hullg.selectAll("path.hull").remove();
+		
+		}
+	}
+	
+	//}
+	/*else
+	{
+		
+		
+	
+		if(draw_hull){
+		first_draw_hull = false;
+		  hullg.selectAll("path.hull").remove();
+		  hull = hullg.selectAll("path.hull")
+		.data(convexHulls(net.nodes, getGroupId, off))
+		.enter().append("path")
+		.attr("class", "hull")
+		.attr("d", drawCluster)
+		.style("fill", function(d) { return fill(d.group); });
+		}
+		else{
+		 hullg.selectAll("path.hull").remove();
+		
+		}
+		
+		
+		
+	}*/
+
+  
+/*  node = nodeg.selectAll("rect.node").data(net.nodes, function(d){return d.id});  
+  node.enter().append("rect")
+      .attr("class", function(d) { return "node" + (d.size?"":" leaf"); }) 
+     .attr("width", function(d) { d.width = Math.max(Math.ceil(node_width * ( 1- d.depth/depth)),8) ; return d.width + 2; })
+	 .attr("height", function(d) { d.height = Math.max(Math.ceil(node_height* ( 1- d.depth/depth)),8) ; return d.height + 2; })
+      .attr("x", function(d) {  d.x = Math.max(d.width/2, Math.min(width - d.width/2, d.x)) ;  return d.x - d.width/2 - 1; })
+      .attr("y", function(d) { d.y = Math.max(d.height/2, Math.min(height - d.height/2, d.y)); return d.y - d.height/2 - 1; })
+      .style("opacity", function(d){if(d.id == net.root.id) return 1;else return 0;});
+  node.exit().transition().duration(1000).ease("exp-in-out").attr("width", 0).attr("height", 0).remove ();
+
+*/
+  force.on("tick", function() {
+	  	if(draw_hull){
+	   if (!hull.empty()) {
+      hull.data(convexHulls(net.nodes, getGroupId, off))
+          .attr("d", drawCluster);
+    }
+		}
+ 
+
+   
+	  
+	
+	
+  
+    link.attr("x1", function(d) { return d.source.x; })
+        .attr("y1", function(d) { return d.source.y; })
+        .attr("x2", function(d) { return d.target.x; })
+        .attr("y2", function(d) { return d.target.y; });
+		
+		   node
+    .attr("cx", function(d) {    return d.x ; })
+      .attr("cy", function(d) { return d.y ; });
+	  
+	   text
+    .attr("x", function(d) {    return d.x ; })
+      .attr("y", function(d) { return d.y ; });
+		
+	
+  });
+  
+  if(!not_center_focus){
+  	center_pre.x = center.x ;
+  	center_pre.y = center.y;
+  }
+
+}//end of redraw
+
+this.redraw = redraw;
+
+
+function resetRoot(d){
+	root = d;
+
+	translation.x = d.x - width/2;
+	translation.y = d.y - height/2;
+	redraw(0);
+}
+
+this.resetRoot = resetRoot;
+
+function   show_details(data, i, element){	
+	 content = "<table width=\"100%\" height=\"100%\" cellpadding=\"0\" cellspacing=\"0\">";
+	 content += "<tr>";
+	 content += "<td><img src = \"" + data.img + "\" width=\"60\"  ></td>"
+	 content += "<td>";
+	 
+	 content += "<table width=\"100%\"  cellpadding=\"0\" cellspacing=\"0\">";
+	 content += "<tr><td width=\"30%\" class=\"name\">Name:</td><td class=\"value\">" +  data.name+ "</td></tr>";
+	 content += "<tr><td class=\"name\">Grape(s):</td><td class=\"value\">" + data.grapeTypes+ "</td></tr>";
+	 content += "<tr><td class=\"name\">Country of origin:</td><td class=\"value\">" +  data.country+ "</td></tr>";
+	  content += "<tr><td class=\"name\">Region:</td><td class=\"value\">" +  data.region+ "</td></tr>";
+	 content += "<tr><td class=\"name\">Type of wine:</td><td class=\"value\">" +  data.genre+ "</td></tr>";
+	 //content += "<tr><td class=\"name\">Node Depth:</td><td class=\"value\">" +  data.depth+ "</td></tr>";   
+    tooltip.showTooltip(content,d3.event)
+} 
+
+function  hide_details (data, i, element){
+	tooltip.hideTooltip();
+
+} 
+
+var pmouse_location = {'x':null,'y':null};
+var startDrag = false;
+
+function mousedown(){			
+//	var p = d3.svg.mouse(self.vis[0][0]),
+//	    t = d3.event.changedTouches;
+
+	d3.select('#viewer').style("cursor","move");	
+//	pmouse_location.x = p[0];
+//	pmouse_location.y = p[1];	
+//	startDrag = true;
+}
+
+
+function mousemove(){	
+	if(!startDrag)return;
+	var p = d3.svg.mouse(self.vis[0][0]),
+		t = d3.event.changedTouches;
+	
+	translation.x += pmouse_location.x - p[0];
+	translation.y += pmouse_location.y - p[1];
+	
+	pmouse_location.x = p[0];
+	pmouse_location.y = p[1];
+	
+	
+	//d3.event.preventDefault();
+	//d3.event.stopPropagation();
+	
+	redraw(0);
+	
+};
+
+
+function mouseup(){
+
+	d3.select('#viewer').style("cursor","auto");
+	
+	//startDrag = false;
+		
+	//pmouse_location.x = null;
+	//pmouse_location.y = null;
+	
+	
+
+};
+
+
+}//end of SemanticViewer
+
+
+SemanticView.prototype.update = function(){
+	var self = this;
+	
+	
+}
+
+
+
+SemanticView.prototype.plot_drag = function(){
+	var self = this;
+	return function(){		
+		registerKeyboardHandler(self.keydown());
+		d3.select('body').style("cursor","move");		
+	}
+};
+
+/*SemanticView.prototype.mousedown = function(){
+	var self = this;
+	return function(){			
+	    var p = d3.svg.mouse(self.vis[0][0]),
+		    t = d3.event.changedTouches;
+		d3.select('body').style("cursor","move");	
+		self.pmouse_location.x = p[0];
+		self.pmouse_location.y = p[1];	
+	}
+};
+
+
+SemanticView.prototype.mousemove = function(){
+	var self = this;
+	return function(){		
+		var p = d3.svg.mouse(self.vis[0][0]),
+		    t = d3.event.changedTouches;
+			
+		
+			
+		console.log(t +':' + p[0] + ':' + p[1]);
+		
+		
+		d3.event.preventDefault();
+		d3.event.stopPropagation();
+			
+	}
+};
+
+SemanticView.prototype.mouseup = function(){
+	var self = this;
+	return function(){
+		document.onselectstart = function(){return true;};
+		d3.select('body').style("cursor","auto");
+		
+		if(!isNaN(self.downx)){
+			//self.redraw();
+			self.downx = Math.NaN;
+			d3.event.preventDefault();
+			d3.event.stopPropagation();
+		}
+		
+		if(!isNaN(self.downy)){
+			//self.redraw();
+			self.downy = Math.NaN;
+			d3.event.preventDefault();
+			d3.event.stopPropagation();
+		}
+		
+		if(self.dragged){
+			self.dragged = null;
+		}		
+	}
+}*/
+
+
+SemanticView.prototype.keydown = function(){
+	/*var self = this;
+	return function(){
+		if(!self.selected) return;
+		switch(d3.event.keyCode){
+			case 8: //backspace
+			case 46: {//delete
+			}
+		}
+	}*/
+
+};
+/*
+
+SemanticView.prototype.redraw = function(){
+	var self = this;
+	return function(){
+		
+		
+	}
+
+}*/
+
+SemanticView.prototype.xaxis_drag = function(){
+	var self = this;
+	return function(d){
+		document.onselectstart = function(){return false;};
+		var p = d3.svg.mouse(self.vis[0][0]);
+		self.downx = p[0];
+	}
+}
+
+SemanticView.prototype.yaxis_drag = function(){
+	var self = this;
+	return function(d){
+		document.onselectstart = function(){return false;};
+		var p = d3.svg.mouse(self.vis[0][0]);
+		self.downy = p[1];
+	}
+}
+
+var semanticview;
+var options ={};
+	
+
+
+$(document).ready(function(){
+	
+	semanticview = new SemanticView("viewer", options);
+	semanticview.init();
+	
+	var communityBtn = $("#communityEnableBtn");
+	communityBtn.click(function(){
+	
+		if(communityBtn.attr("value") == "Enable"){
+			semanticview.setDrawHull(true);
+			communityBtn.attr("value", "Disable");			
+			semanticview.redraw(1);
+		}else{			
+			semanticview.setDrawHull(false);
+			communityBtn.attr("value","Enable");
+			semanticview.redraw(1);
+		}
+	});
+});
+
+
+
+
+</script>
+
+
+
+
+
+
+	<div id="result"></div>
+	<pre id="mypre"></pre>
+</body>
+</html>

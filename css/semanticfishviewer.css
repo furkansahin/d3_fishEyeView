@@ -1,0 +1,308 @@
+svg {
+	border: 1px solid #ccc;
+}
+
+body {
+	font: 10px sans-serif;
+	background: #000000;
+	margin: 5px;
+}
+
+rect.node {
+	fill: #0C6;
+	stroke: #fff;
+	stroke-width: 0px;
+	cursor: pointer;
+}
+
+circle.node {
+	fill: #3C6;
+	stroke: #fff;
+	stroke-width: 0px;
+	cursor: pointer;
+}
+
+circle.knode {
+	cursor: pointer;
+}
+
+text.node {
+	cursor: pointer;
+	fill: #fff;
+	font-size: 13px;
+}
+
+text.ktext {
+	cursor: pointer;
+	fill: #F8A011;
+	font-size: 20px;
+}
+
+image.node {
+	cursor: pointer;
+}
+
+image.knode {
+	cursor: pointer;
+}
+
+path.hull {
+	fill: lightsteelblue;
+	fill-opacity: 0.5;
+}
+
+line.link {
+	stroke: #888;
+	stroke-opacity: 1;
+	pointer-events: none;
+	stroke-width: 0.5px;
+}
+
+line.klink {
+	stroke: #FFCC66;
+	stroke-width: 1.5px;
+}
+
+.tooltip {
+	position: absolute;
+	top: 100px;
+	left: 100px;
+	-moz-border-radius: 5px;
+	border-radius: 5px;
+	border: 2px solid;
+	background-color: #FFFFFF;
+	border-color: #FF6600;
+	background: #fff;
+	opacity: .9;
+	color: black;
+	padding: 5px;
+	width: 300px;
+	font-size: 11px;
+	z-index: 10;
+}
+
+.tooltip .closebtn {
+	cursor: pointer;
+	position: absolute;
+	opacity: .9;
+}
+
+.tooltip td {
+	padding: 5px 0;
+	vertical-align: top;
+}
+
+.tooltip img {
+	padding: o 5px 0 0;
+}
+
+.tooltip .title {
+	font-size: 13px;
+}
+
+.tooltip .name {
+	font-weight: bold;
+}
+
+#slider {
+	margin: 10px;
+}
+
+.autofill {
+	background: #FFFFFF;
+	border-color: #CCCCCC;
+	border-style: solid;
+	border-width: thin;
+	position: absolute;
+	width: 218px;
+	text-align: left;
+	right: 57px;
+	top: 47px;
+	z-index: 100;
+}
+
+.autofill_row_mouseover {
+	background: #CCCCCC;
+}
+
+.autofill_row_mouseout {
+	background: #FFFFFF;
+}
+
+.ui-autocomplete-loading {
+	background: white url('../images/ui-anim_basic_16x16.gif') right center
+		no-repeat;
+}
+
+.ui-autocomplete-category {
+	margin: 0em 0 0em;
+	line-height: 1;
+	font-size: 12px;
+	color: #FF9933;
+}
+
+/*tunner tool*/
+.arrowlistmenu {
+	width: 290px; /*width of accordion menu*/
+	padding-left: 5px;
+	/*padding-right:5px;*/
+}
+
+.arrowlistmenu .menuheader {
+	/*CSS class for menu headers in general (expanding or not!)*/
+	font: bold 14px Arial;
+	color: white;
+	background: black url(../images/titlebar.png) repeat-x center left;
+	margin-bottom: 7px;
+	/*bottom spacing between header and rest of content*/
+	margin-top: 0px;
+	text-transform: uppercase;
+	padding: 4px 10px 4px 10px; /*header text is indented 10px*/
+	cursor: hand;
+	cursor: pointer;
+}
+
+.arrowlistmenu .openheader {
+	/*CSS class to apply to expandable header when it's expanded*/
+	background-image: url(../images/titlebar-active.png);
+}
+
+.arrowlistmenu ul { /*CSS for UL of each sub menu*/
+	list-style-type: none;
+	margin: 0;
+	padding: 0;
+	margin-bottom: 8px;
+	/*bottom spacing between each UL and rest of content*/
+}
+
+.arrowlistmenu ul li {
+	padding-bottom: 2px; /*bottom spacing between menu items*/
+}
+
+.arrowlistmenu ul li a {
+	color: #A70303;
+	background: url(../images/arrowbullet.png) no-repeat center left;
+	/*custom bullet list image*/
+	display: block;
+	padding: 2px 0;
+	padding-left: 19px; /*link text is indented 19px*/
+	text-decoration: none;
+	font-weight: bold;
+	border-bottom: 1px solid #dadada;
+	font-size: 90%;
+}
+
+.arrowlistmenu ul li a:visited {
+	color: #A70303;
+}
+
+.arrowlistmenu ul li a:hover { /*hover state CSS*/
+	color: #A70303;
+	background-color: #F3F3F3;
+}
+
+.arrowlistmenu div {
+	color: white;
+	font: normal 12px sans-serif, Tahoma, "Lucida Grande", "Trebuchet MS",
+		Helvetica;
+	padding: 0px 0px 7px 0px;
+}
+
+.arrowlistmenu td.name {
+	font-weight: bold;
+	padding: 0 0 4px 0;
+}
+
+.arrowlistmenu td {
+	vertical-align: top;
+}
+
+.arrowlistmenu td.value {
+	padding: 0 0 4px 0;
+}
+
+.arrowlistmenu td.productimg {
+	padding: 3px 0 0 0;
+}
+
+.arrowlistmenu table {
+	border-spacing: 0px;
+}
+
+.arrowlistmenu tr.even {
+	
+}
+
+.arrowlistmenu tr.odd {
+	background-color: #333333;
+}
+
+.arrowlistmenu td.button {
+	vertical-align: middle;
+	margin: 0;
+	padding: 0;
+	cursor: hand;
+	cursor: pointer;
+	width: 20px;
+}
+
+.layout-slider {
+	margin-bottom: 10px;
+	width: 50%;
+}
+
+.critiquing .ui-button {
+	width: 55px;
+}
+
+.critiquing td {
+	vertical-align: middle;
+}
+
+.ptap .ui-button {
+	width: 93px;
+}
+
+.ptap td {
+	vertical-align: top;
+}
+
+.ptap .ui-corner-left {
+	border-top-left-radius: 0px;
+	border-bottom-left-radius: 0px;
+	-khtml-border-bottom-left-radius: 0px;
+	-khtml-border-top-left-radius: 0px;
+}
+
+.ptap .ui-corner-right {
+	border-top-right-radius: 0px;
+	border-bottom-right-radius: 0px;
+	-khtml-border-bottom-right-radius: 0px;
+	-khtml-border-top-right-radius: 0px;
+}
+
+#searchtext { /* display: block;*/
+	margin: 0 2px;
+	-webkit-appearance: none;
+	-moz-appearance: none;
+	padding: 5px 5px 5px 5px;
+	border-radius: 50px;
+	width: 280px;
+	height: 13px;
+	color: #3a4449;
+	border: none;
+	outline: none;
+	/*box-shadow: 0 0 0 1px rgba(0,0,0,.3), 0 2px 0 rgba(255,255,255,.3), inset 0 1px 2px rgba(0,0,0,.2);*/
+	/*  position: relative;*/
+	/*   z-index: 1;*/
+	background: #fff
+		url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACQAAAAcCAIAAACGS4oPAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAbtJREFUeNrsVd9LwlAU3ubYdudvsymUQULam2GpoWFFYFD900rh1EytB3/1lAbW1oOJgWK7HbPCh9hUbEX1cR/O/Th33+693z2HvL5tCQ4bRZLEF8PIMvQowoQeoPWTIgiK0BG/V4zW8cpGBtFLblI33jQaudx5q3UHsdvtCoW2VjyeacVIeNSLNiup+qjFbDZ1egYPf5SGMVYwju/EtsPhyZXMiNW+s0azmU6LRoQikfC63w9MpVrNZLJALi8NMU83imKGZdlYNLoZDBpfAQFMgUyLmTlb/7HTge/6/b5xEqZAttvtGQyidpAswyiKMswZT8OYpmmDwaC+9pOdYdXhdDopiqrUauNkrV4HUhAErLX8Y7yLqWIjEIAdFIul0uVVt/sEA4KLQhHEfL41PDHerO+wmNWtX65U8vlCv99XlOfhD1IGhmE4jkU8f7C/x3HcJGdoM6KhmF1LDCBJUrlclaT7wWAgCC6vd7Ver8nyA4e4w0QCIaQpZh+J2cwmcvpO3ev1ksmULMsWq/Xk+Egz32HiZ6/6YP3deBxKl4nnpyhXVtMsO5sWC2b+G/rZD2sx/536jx7jiwADANtP/9R/HghOAAAAAElFTkSuQmCC)
+		center right no-repeat;
+}
+
+#searchtext::-webkit-input-placeholder,#s:-moz-placeholder {
+	color: #607078;
+}
+
+.searchtool{
+	margin-bottom:5px;
