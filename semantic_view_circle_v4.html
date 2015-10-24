@@ -655,7 +655,7 @@ SemanticView = function(elemid, options){
 
 	vis.attr("opacity", 1e-6)
 	   .transition()
-	   .duration(1000)
+	   .duration(100)
 	   .attr("opacity", 1);
 	   
 	var hullg = vis.append("g");
@@ -1400,7 +1400,7 @@ SemanticView = function(elemid, options){
 
 		var remain_links = [];
 		
-		keyword_data.links.forEach(function(d){
+/*		keyword_data.links.forEach(function(d){
 			if(!d.source.id){
 				d.source = keyword_data.nodes[d.source];
 				d.target = keyword_data.nodes[d.target];
@@ -1418,10 +1418,10 @@ SemanticView = function(elemid, options){
 		
 		filteredData = keyword_data.nodes.filter(function(d){
 			if(d.type == "keyword" && $.inArray(d.id, keyword_list) != -1 && d.label != "family") {return true};
-		});  
-		};
+		});
+*/		};
 
-  		
+
 		angle = 2 * Math.PI/filteredData.length;
 		radius = 70;
 	
